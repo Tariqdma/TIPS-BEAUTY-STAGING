@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Outlet, Link, useLocation, Navigate } from 'react-router-dom';
 import {
     LayoutDashboard, Package, LogOut, Menu, X, Loader2,
-    ShoppingBag, Users, Settings, Tag, TrendingUp, Sparkles, Truck
+    ShoppingBag, Tag, TrendingUp, Sparkles, Truck
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -139,4 +139,3 @@ export const AdminLayout: React.FC = () => {
         </div>
     );
 };
-
