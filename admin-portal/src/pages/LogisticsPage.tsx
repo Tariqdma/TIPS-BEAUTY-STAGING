@@ -1,172 +1,80 @@
-import React, { useState } from 'react';
-import {
-    Truck, UserPlus, MapPin, Navigation,
-    Phone, CheckCircle, AlertTriangle, Search
-} from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import type { FormEvent } from 'react';
+import { CheckCircle, Navigation, Phone, RefreshCw, Search, Truck, UserPlus, Warehouse } from 'lucide-react';
+import { supabase } from '../lib/supabase';
+
+type Driver = { id: string; name: string; phone: string; company: string | null; vehicle: string | null; status: 'active' | 'busy' | 'offline'; user_id: string | null; warehouse_id: string | null; created_at: string };
+type WarehouseItem = { id: string; name: string; city: string };
+type Order = { id: string; order_number: string | null; customer_name: string | null; city: string | null; shipping_address: string | null; status: string; driver_id: string | null };
+
+const newDriver = { name: '', phone: '', vehicle: '', company: '', warehouseId: '', userId: '' };
 
 export const LogisticsPage: React.FC = () => {
-    const [drivers] = useState([
-        { id: 1, name: 'محمد أحمد', phone: '0912345678', vehicle: 'Hyundai Accent (White)', status: 'available', trips: 12 },
-        { id: 2, name: 'ياسر علي', phone: '0987654321', vehicle: 'Toyota Hilux (Silver)', status: 'busy', trips: 8 },
-        { id: 3, name: 'عمر عثمان', phone: '0901234567', vehicle: 'Motorcycle', status: 'offline', trips: 15 },
-    ]);
+    const [drivers, setDrivers] = useState<Driver[]>([]);
+    const [warehouses, setWarehouses] = useState<WarehouseItem[]>([]);
+    const [pendingOrders, setPendingOrders] = useState<Order[]>([]);
+    const [search, setSearch] = useState('');
+    const [showForm, setShowForm] = useState(false);
+    const [form, setForm] = useState(newDriver);
+    const [saving, setSaving] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+    const [message, setMessage] = useState('');
 
-    return (
-        <div className="space-y-8 animate-in fade-in duration-500">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl font-black text-slate-900 tracking-tight">الخدمات اللوجستية</h1>
-                    <p className="text-slate-500 font-medium mt-1">إدارة السائقين، تعيين الرحلات، ومتابعة التوصيل</p>
-                </div>
-                <button className="flex items-center gap-2 bg-slate-900 text-white px-6 py-3 rounded-2xl font-black hover:bg-slate-800 transition-all shadow-xl">
-                    <UserPlus className="w-5 h-5" />
-                    إضافة سائق جديد
-                </button>
-            </div>
+    const loadData = async () => {
+        setLoading(true); setError('');
+        const [driverResponse, warehouseResponse, orderResponse] = await Promise.all([
+            supabase.from('drivers').select('id,name,phone,company,vehicle,status,user_id,warehouse_id,created_at').order('name'),
+            supabase.from('warehouses').select('id,name,city').eq('is_active', true).order('name'),
+            supabase.from('orders').select('id,order_number,customer_name,city,shipping_address,status,driver_id').in('status', ['confirmed', 'preparing', 'shipped']).order('created_at', { ascending: false }).limit(10),
+        ]);
+        const firstError = driverResponse.error || warehouseResponse.error || orderResponse.error;
+        if (firstError) setError(firstError.message);
+        setDrivers((driverResponse.data || []) as Driver[]);
+        setWarehouses((warehouseResponse.data || []) as WarehouseItem[]);
+        setPendingOrders((orderResponse.data || []) as Order[]);
+        setLoading(false);
+    };
 
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-                {/* Real-time Fleet Status */}
-                <div className="lg:col-span-3 space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-4">
-                            <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center border border-emerald-100">
-                                <Navigation className="w-6 h-6" />
-                            </div>
-                            <div>
-                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">متاح الآن</p>
-                                <h4 className="text-xl font-black text-slate-900">5 سائقين</h4>
-                            </div>
-                        </div>
-                        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-4">
-                            <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center border border-blue-100">
-                                <Truck className="w-6 h-6" />
-                            </div>
-                            <div>
-                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">في رحلة</p>
-                                <h4 className="text-xl font-black text-slate-900">12 طلب</h4>
-                            </div>
-                        </div>
-                        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-4">
-                            <div className="w-12 h-12 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center border border-red-100">
-                                <AlertTriangle className="w-6 h-6" />
-                            </div>
-                            <div>
-                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">تأخيرات</p>
-                                <h4 className="text-xl font-black text-slate-900">2 طلب</h4>
-                            </div>
-                        </div>
-                    </div>
+    useEffect(() => { void loadData(); }, []);
 
-                    <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
-                        <div className="p-6 border-b border-slate-50 flex items-center justify-between">
-                            <h3 className="font-black text-slate-900">قائمة السائقين والمناديب</h3>
-                            <div className="relative">
-                                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                                <input type="text" placeholder="البحث..." className="pl-9 pr-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-xs font-medium outline-none focus:ring-2 focus:ring-brand-blue" />
-                            </div>
-                        </div>
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-right border-collapse">
-                                <thead>
-                                    <tr className="border-b border-slate-50">
-                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">السائق</th>
-                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">المركبة</th>
-                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">الحالة</th>
-                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">الرحلات</th>
-                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-left">التواصل</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-50">
-                                    {drivers.map((driver) => (
-                                        <tr key={driver.id} className="hover:bg-slate-50/50 transition-colors">
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-600 font-black text-sm">
-                                                        {driver.name.charAt(0)}
-                                                    </div>
-                                                    <div>
-                                                        <p className="font-bold text-slate-900 text-sm">{driver.name}</p>
-                                                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">Certified Porter</p>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <p className="text-xs font-bold text-slate-600">{driver.vehicle}</p>
-                                            </td>
-                                            <td className="px-6 py-4 text-center">
-                                                <span className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase inline-flex items-center gap-1.5 ${driver.status === 'available' ? 'bg-emerald-50 text-emerald-600' :
-                                                    driver.status === 'busy' ? 'bg-blue-50 text-blue-600' : 'bg-slate-100 text-slate-400'
-                                                    }`}>
-                                                    <span className={`w-1.5 h-1.5 rounded-full ${driver.status === 'available' ? 'bg-emerald-500' :
-                                                        driver.status === 'busy' ? 'bg-blue-500' : 'bg-slate-400'
-                                                        }`}></span>
-                                                    {driver.status === 'available' ? 'متاح' :
-                                                        driver.status === 'busy' ? 'في رحلة' : 'غير متصل'}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 text-center">
-                                                <p className="text-xs font-black text-slate-700">{driver.trips}</p>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center justify-end gap-2">
-                                                    <button className="p-2 bg-slate-50 text-slate-400 rounded-xl hover:text-brand-blue transition-all border border-slate-100">
-                                                        <Phone className="w-4 h-4" />
-                                                    </button>
-                                                    <button className="p-2 bg-slate-50 text-slate-400 rounded-xl hover:text-blue-500 transition-all border border-slate-100">
-                                                        <MapPin className="w-4 h-4" />
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
+    const createDriver = async (event: FormEvent) => {
+        event.preventDefault();
+        setSaving(true); setError(''); setMessage('');
+        const { error: insertError } = await supabase.from('drivers').insert({
+            name: form.name.trim(), phone: form.phone.trim(), vehicle: form.vehicle.trim() || null, company: form.company.trim() || null,
+            warehouse_id: form.warehouseId || null, user_id: form.userId.trim() || null, status: 'offline',
+        });
+        setSaving(false);
+        if (insertError) { setError(insertError.message); return; }
+        setForm(newDriver); setShowForm(false); setMessage('تمت إضافة المندوب. اربط حسابه عبر User ID بعد إنشاء حساب الدخول.');
+        void loadData();
+    };
 
-                {/* Dispatch Panel */}
-                <div className="bg-slate-900 p-8 rounded-3xl shadow-xl space-y-8 flex flex-col h-full overflow-hidden relative">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl"></div>
-                    <h3 className="text-xl font-black text-white flex items-center gap-2">
-                        <Navigation className="w-5 h-5 text-blue-400" />
-                        لوحة التوزيع الفوري
-                    </h3>
-                    <div className="space-y-4 flex-1">
-                        <div className="p-5 bg-white/5 border border-white/10 rounded-2xl">
-                            <div className="flex justify-between items-start mb-3">
-                                <span className="text-[10px] font-black text-red-500 uppercase tracking-widest bg-red-500/10 px-2 py-0.5 rounded">Urgent Dispatch</span>
-                                <span className="text-[10px] text-slate-500 font-bold uppercase">2 mins ago</span>
-                            </div>
-                            <p className="text-white font-bold text-sm mb-1">طلب رقم #F0A2</p>
-                            <p className="text-slate-400 text-xs font-medium">الخرطوم، شارع الستين - عمارة القصر</p>
-                            <button className="mt-4 w-full py-2 bg-blue-500 text-white rounded-xl text-xs font-black hover:bg-blue-600 transition-all shadow-lg shadow-blue-900/40">
-                                تعيين أفضل سائق متاح
-                            </button>
-                        </div>
-                        <div className="p-5 bg-white/5 border border-white/10 rounded-2xl opacity-60">
-                            <p className="text-white font-bold text-sm mb-1">طلب رقم #E411</p>
-                            <p className="text-slate-400 text-xs font-medium">بورتسودان، حي الشاطئ - خلف الفندق</p>
-                            <button className="mt-4 w-full py-2 bg-white/10 text-white rounded-xl text-xs font-black">
-                                تأكيد التعيين
-                            </button>
-                        </div>
-                    </div>
+    const updateDriverStatus = async (driver: Driver, status: Driver['status']) => {
+        const { error: updateError } = await supabase.from('drivers').update({ status }).eq('id', driver.id);
+        if (updateError) { setError(updateError.message); return; }
+        setDrivers((current) => current.map((item) => item.id === driver.id ? { ...item, status } : item));
+    };
 
-                    <div className="bg-white/5 p-4 rounded-2xl border border-white/10">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-emerald-500/20 text-emerald-400 rounded-xl flex items-center justify-center">
-                                <CheckCircle className="w-6 h-6" />
-                            </div>
-                            <div>
-                                <p className="text-white font-black text-sm">تم التوصيل بنجاح</p>
-                                <p className="text-slate-500 text-[10px] font-bold uppercase tracking-tighter">Last 1 hour: 8 orders</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
+    const assignOrder = async (order: Order, driverId: string) => {
+        const { error: updateError } = await supabase.from('orders').update({ driver_id: driverId || null }).eq('id', order.id);
+        if (updateError) { setError(updateError.message); return; }
+        setMessage(driverId ? 'تم تعيين المندوب للطلب.' : 'تم إلغاء تعيين المندوب.');
+        setPendingOrders((current) => current.map((item) => item.id === order.id ? { ...item, driver_id: driverId || null } : item));
+    };
+
+    const filteredDrivers = useMemo(() => drivers.filter((driver) => `${driver.name} ${driver.phone} ${driver.vehicle || ''}`.toLowerCase().includes(search.toLowerCase())), [drivers, search]);
+    const warehouseName = (warehouseId: string | null) => warehouses.find((warehouse) => warehouse.id === warehouseId)?.name || 'غير محدد';
+    const driverName = (driverId: string | null) => drivers.find((driver) => driver.id === driverId)?.name || 'غير معين';
+    const statusClass = (status: Driver['status']) => ({ active: 'bg-emerald-50 text-emerald-700', busy: 'bg-blue-50 text-blue-700', offline: 'bg-slate-100 text-slate-500' }[status]);
+
+    return <div className="space-y-6 animate-in fade-in duration-500">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div><h1 className="text-2xl sm:text-3xl font-black text-slate-900">الخدمات اللوجستية</h1><p className="mt-1 text-sm text-slate-500">إدارة المندوبين، المناطق، وتوزيع طلبات التوصيل.</p></div><div className="flex gap-2"><button onClick={() => void loadData()} className="rounded-xl border border-slate-200 bg-white p-3 text-slate-600"><RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} /></button><button onClick={() => setShowForm((current) => !current)} className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-sm font-black text-white"><UserPlus className="w-5 h-5" />إضافة مندوب</button></div></div>
+        {error && <div className="rounded-xl border border-red-100 bg-red-50 p-4 text-sm font-bold text-red-700">{error}</div>}{message && <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-4 text-sm font-bold text-emerald-700">{message}</div>}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3"><div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-5"><Navigation className="w-6 text-emerald-600" /><p className="mt-3 text-xs font-bold text-emerald-700">متاحون الآن</p><p className="text-3xl font-black text-emerald-800">{drivers.filter((driver) => driver.status === 'active').length}</p></div><div className="rounded-2xl border border-blue-100 bg-blue-50 p-5"><Truck className="w-6 text-blue-600" /><p className="mt-3 text-xs font-bold text-blue-700">في رحلة</p><p className="text-3xl font-black text-blue-800">{drivers.filter((driver) => driver.status === 'busy').length}</p></div><div className="rounded-2xl border border-slate-100 bg-white p-5"><CheckCircle className="w-6 text-brand-blue" /><p className="mt-3 text-xs font-bold text-slate-500">طلبات تحتاج توزيع</p><p className="text-3xl font-black text-slate-900">{pendingOrders.filter((order) => !order.driver_id).length}</p></div></div>
+        {showForm && <form onSubmit={createDriver} className="grid grid-cols-1 gap-3 rounded-2xl border border-blue-100 bg-blue-50/50 p-5 sm:grid-cols-2 lg:grid-cols-3"><h2 className="sm:col-span-2 lg:col-span-3 font-black text-slate-900">إضافة مندوب جديد</h2><input required value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder="اسم المندوب" className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"/><input required value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} placeholder="رقم الهاتف" className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"/><input value={form.vehicle} onChange={(event) => setForm({ ...form, vehicle: event.target.value })} placeholder="المركبة / وسيلة التوصيل" className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"/><select value={form.warehouseId} onChange={(event) => setForm({ ...form, warehouseId: event.target.value })} className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"><option value="">الفرع المسؤول (اختياري)</option>{warehouses.map((warehouse) => <option key={warehouse.id} value={warehouse.id}>{warehouse.name} — {warehouse.city}</option>)}</select><input value={form.userId} onChange={(event) => setForm({ ...form, userId: event.target.value })} placeholder="Supabase User ID للربط (اختياري)" className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"/><input value={form.company} onChange={(event) => setForm({ ...form, company: event.target.value })} placeholder="شركة التوصيل (اختياري)" className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"/><div className="sm:col-span-2 lg:col-span-3 flex gap-2"><button disabled={saving} className="rounded-xl bg-brand-blue px-5 py-3 text-sm font-bold text-white disabled:opacity-60">{saving ? 'جارٍ الحفظ...' : 'حفظ المندوب'}</button><button type="button" onClick={() => setShowForm(false)} className="rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-600">إلغاء</button></div></form>}
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-3"><section className="xl:col-span-2 overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm"><div className="flex flex-col gap-3 border-b border-slate-100 p-5 sm:flex-row sm:items-center sm:justify-between"><h2 className="font-black text-slate-900">قائمة المندوبين</h2><div className="relative"><Search className="absolute left-3 top-1/2 w-4 -translate-y-1/2 text-slate-400" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="البحث..." className="rounded-xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-xs outline-none" /></div></div><div className="divide-y divide-slate-50">{filteredDrivers.length ? filteredDrivers.map((driver) => <article key={driver.id} className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between"><div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 font-black text-slate-600">{driver.name.charAt(0)}</div><div><p className="font-bold text-slate-900">{driver.name}</p><p className="text-xs text-slate-400">{driver.phone} · {driver.vehicle || 'وسيلة غير محددة'}</p><p className="mt-1 flex items-center gap-1 text-[10px] text-slate-400"><Warehouse className="w-3" />{warehouseName(driver.warehouse_id)} · {driver.user_id ? 'حساب مرتبط' : 'بدون حساب'}</p></div></div><div className="flex items-center gap-2"><select value={driver.status} onChange={(event) => void updateDriverStatus(driver, event.target.value as Driver['status'])} className={`rounded-lg px-3 py-2 text-xs font-bold outline-none ${statusClass(driver.status)}`}><option value="active">متاح</option><option value="busy">في رحلة</option><option value="offline">غير متصل</option></select><a href={`tel:${driver.phone}`} className="rounded-lg border border-slate-200 p-2 text-slate-500"><Phone className="w-4" /></a></div></article>) : <p className="p-10 text-center text-sm text-slate-400">لا يوجد مناديب مطابقون.</p>}</div></section>
+        <section className="rounded-3xl bg-slate-900 p-5 text-white shadow-xl"><h2 className="flex items-center gap-2 font-black"><Navigation className="w-5 text-blue-400" />توزيع الطلبات</h2><p className="mt-1 text-xs text-slate-400">الطلبات المؤكدة أو الجاري تجهيزها أو في طريقها للتوصيل.</p><div className="mt-4 space-y-3">{pendingOrders.length ? pendingOrders.map((order) => <article key={order.id} className="rounded-2xl border border-white/10 bg-white/5 p-4"><p className="font-bold">{order.order_number || order.id.slice(0, 8)}</p><p className="mt-1 text-xs text-slate-400">{order.customer_name || 'عميل'} · {order.city || '—'}</p><p className="mt-1 text-xs text-slate-500">{order.shipping_address || 'لا يوجد عنوان'}</p><select value={order.driver_id || ''} onChange={(event) => void assignOrder(order, event.target.value)} className="mt-3 w-full rounded-xl border border-white/10 bg-slate-800 px-3 py-2 text-xs text-white outline-none"><option value="">تعيين مندوب...</option>{drivers.filter((driver) => driver.status !== 'offline').map((driver) => <option key={driver.id} value={driver.id}>{driver.name} ({driver.status})</option>)}</select><p className="mt-2 text-[10px] text-slate-500">المعين: {driverName(order.driver_id)}</p></article>) : <p className="rounded-2xl bg-white/5 p-6 text-center text-xs text-slate-400">لا توجد طلبات لوجستية حالياً.</p>}</div></section></div>
+    </div>;
 };

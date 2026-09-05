@@ -2,12 +2,12 @@ import React, { useState } from 'react';
 import { Outlet, Link, useLocation, Navigate } from 'react-router-dom';
 import {
     LayoutDashboard, Package, LogOut, Menu, X, Loader2,
-    ShoppingBag, Tag, TrendingUp, Sparkles, Truck
+    ShoppingBag, Tag, TrendingUp, Sparkles, Truck, Warehouse
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export const AdminLayout: React.FC = () => {
-    const [sidebarOpen, setSidebarOpen] = useState(true);
+    const [sidebarOpen, setSidebarOpen] = useState(false);
     const location = useLocation();
     const { user, isAdmin, loading, signOut } = useAuth();
 
@@ -27,6 +27,7 @@ export const AdminLayout: React.FC = () => {
         { path: '/dashboard', icon: LayoutDashboard, label: 'لوحة التحكم', badge: null },
         { path: '/orders', icon: ShoppingBag, label: 'إدارة الطلبات', badge: '5' },
         { path: '/logistics', icon: Truck, label: 'الخدمات اللوجستية', badge: null },
+        { path: '/warehouses', icon: Warehouse, label: 'الفروع والمخازن', badge: null },
         { path: '/products', icon: Package, label: 'المنتجات والمخزون', badge: null },
         { path: '/categories', icon: Tag, label: 'التصنيفات', badge: null },
         { path: '/marketing', icon: Sparkles, label: 'التسويق والعروض', badge: null },
@@ -38,16 +39,16 @@ export const AdminLayout: React.FC = () => {
     return (
         <div className="min-h-screen bg-slate-50 flex font-sans text-slate-900" dir="rtl">
             {/* Sidebar Overlay */}
-            {!sidebarOpen && (
+            {sidebarOpen && (
                 <div
-                    className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-40 lg:hidden"
-                    onClick={() => setSidebarOpen(true)}
+                    className="fixed inset-0 bg-slate-950/50 backdrop-blur-sm z-40 lg:hidden"
+                    onClick={() => setSidebarOpen(false)}
                 />
             )}
 
             {/* Sidebar */}
             <aside
-                className={`fixed inset-y-0 right-0 z-50 w-72 bg-slate-900 text-white shadow-2xl transform transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : 'translate-x-full'
+                className={`fixed inset-y-0 right-0 z-50 w-[min(18rem,86vw)] bg-slate-900 text-white shadow-2xl transform transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : 'translate-x-full'
                     } lg:relative lg:translate-x-0 lg:flex-shrink-0 border-l border-slate-800`}
             >
                 <div className="h-full flex flex-col">
@@ -55,7 +56,7 @@ export const AdminLayout: React.FC = () => {
                     <div className="h-20 flex items-center justify-between px-6 border-b border-slate-800">
                         <div className="flex items-center gap-3">
                             <div className="bg-white p-1.5 rounded-lg shadow-sm">
-                                <img src="/logo.png" alt="Tips Admin" className="h-12 w-auto object-contain" />
+                                <img src={`${import.meta.env.BASE_URL}logo.png`} alt="Tips Admin" className="h-12 w-auto object-contain" />
                             </div>
                             <div>
                                 <h2 className="text-xl font-bold tracking-tight text-white">إدارة تيبس</h2>
@@ -76,6 +77,7 @@ export const AdminLayout: React.FC = () => {
                                 <Link
                                     key={item.path}
                                     to={item.path}
+                                    onClick={() => setSidebarOpen(false)}
                                     className={`group flex items-center justify-between px-4 py-3.5 rounded-xl transition-all duration-200 ${active
                                         ? 'bg-brand-blue text-white shadow-lg shadow-brand-blue/20'
                                         : 'text-slate-400 hover:bg-slate-800 hover:text-slate-100'
@@ -119,19 +121,19 @@ export const AdminLayout: React.FC = () => {
             </aside>
 
             {/* Main Content Area */}
-            <div className="flex-1 flex flex-col min-w-0 max-h-screen">
+            <div className="flex-1 flex flex-col min-w-0 min-h-screen">
                 {/* Header (Mobile) */}
-                <header className="h-20 bg-white border-b border-slate-200 px-6 flex items-center justify-between lg:hidden flex-shrink-0">
+                <header className="h-16 bg-white border-b border-slate-200 px-4 flex items-center justify-between lg:hidden flex-shrink-0 sticky top-0 z-30">
                     <button onClick={() => setSidebarOpen(true)} className="p-2 text-slate-600 hover:bg-slate-50 rounded-lg">
                         <Menu className="w-6 h-6" />
                     </button>
-                    <h2 className="text-lg font-bold text-slate-900">نظام إدارة تيبس</h2>
+                    <h2 className="text-base font-bold text-slate-900">نظام إدارة تيبس</h2>
                     <div className="w-10" /> {/* Spacer */}
                 </header>
 
                 {/* Dashboard Viewport */}
                 <main className="flex-1 overflow-y-auto bg-[#F8FAFC] custom-scrollbar">
-                    <div className="max-w-[1600px] mx-auto p-4 md:p-8 lg:p-10">
+                    <div className="max-w-[1600px] mx-auto p-4 sm:p-6 md:p-8 lg:p-10">
                         <Outlet />
                     </div>
                 </main>

@@ -6,6 +6,7 @@ import { ProductListPage } from './pages/products/ProductListPage';
 import { ProductFormPage } from './pages/products/ProductFormPage';
 import { OrderListPage } from './pages/orders/OrderListPage';
 import { LogisticsPage } from './pages/LogisticsPage';
+import { WarehousesPage } from './pages/WarehousesPage';
 import { MarketingPage } from './pages/MarketingPage';
 import { BIPage } from './pages/BIPage';
 import { CategoriesPage } from './pages/CategoriesPage';
@@ -21,6 +22,7 @@ function App() {
         {/* Order Management */}
         <Route path="orders" element={<OrderListPage />} />
         <Route path="logistics" element={<LogisticsPage />} />
+        <Route path="warehouses" element={<WarehousesPage />} />
 
         {/* Inventory & Products */}
         <Route path="products" element={<ProductListPage />} />
@@ -38,4 +40,3 @@ function App() {
 }
 
 export default App;
-
