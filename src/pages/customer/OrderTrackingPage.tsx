@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { Search, Truck, Package, Clock, AlertCircle } from 'lucide-react';
 import { CheckCircle } from 'lucide-react';
 
 export const OrderTrackingPage: React.FC = () => {
-    const [orderId, setOrderId] = useState('');
+    const [searchParams] = useSearchParams();
+    const [orderId, setOrderId] = useState(searchParams.get('order') ?? '');
     const [order, setOrder] = useState<any | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -16,12 +18,10 @@ export const OrderTrackingPage: React.FC = () => {
         setOrder(null);
 
         try {
-            // In a real app, maybe search by phone number too for security
-            // Here assuming orderId is the UUID
             const { data, error } = await supabase
                 .from('orders')
-                .select('*')
-                .eq('id', orderId) // User needs to know the exact UUID? Maybe phone + simple ID is better later
+                .select('id,order_number,customer_name,items,total,status,payment_status,shipping_address,city,created_at')
+                .eq('order_number', orderId.trim())
                 .single();
 
             if (error) throw error;
@@ -54,7 +54,7 @@ export const OrderTrackingPage: React.FC = () => {
                 <form onSubmit={handleTrack} className="flex gap-4">
                     <input
                         type="text"
-                        placeholder="أدخل رقم الطلب (UUID)"
+                        placeholder="أدخل رقم الطلب (مثل TB-...)"
                         value={orderId}
                         onChange={e => setOrderId(e.target.value)}
                         className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-6 py-4 outline-none focus:ring-2 focus:ring-brand-blue"
@@ -82,7 +82,7 @@ export const OrderTrackingPage: React.FC = () => {
                     <div className="flex justify-between items-center mb-8 border-b border-gray-100 pb-4">
                         <div>
                             <p className="text-gray-500 text-sm">رقم الطلب</p>
-                            <p className="font-mono font-bold text-gray-800">{order.id.split('-')[0]}...</p>
+                            <p className="font-mono font-bold text-gray-800">{order.order_number}</p>
                         </div>
                         <div className="text-left">
                             <p className="text-gray-500 text-sm">تاريخ الطلب</p>
@@ -138,7 +138,7 @@ export const OrderTrackingPage: React.FC = () => {
                             style={{ border: 0 }}
                             loading="lazy"
                             allowFullScreen
-                            src={`https://www.google.com/maps/embed/v1/place?key=YOUR_API_KEY&q=${encodeURIComponent(order.city + ', ' + order.address)}`}
+                            src={`https://www.google.com/maps/embed/v1/place?key=YOUR_API_KEY&q=${encodeURIComponent(order.city + ', ' + order.shipping_address)}`}
                         ></iframe>
                         <div className="p-2 text-xs text-center text-gray-400">
                             ملاحظة: الخريطة توضيحية وتعتمد على العنوان المدخل.

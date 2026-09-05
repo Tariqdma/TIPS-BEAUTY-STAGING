@@ -7,7 +7,7 @@ import { CreditCard, Wallet, Banknote } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 export const CheckoutPage: React.FC = () => {
-    const { cart, cartCount } = useStore();
+    const { cart, cartCount, clearCart } = useStore();
     const { user } = useAuth();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
@@ -45,25 +45,22 @@ export const CheckoutPage: React.FC = () => {
         setLoading(true);
 
         try {
-            const { data, error } = await supabase.from('orders').insert([
-                {
-                    customer_id: user.id,
-                    customer_name: formData.name,
-                    phone: formData.phone,
-                    shipping_address: formData.address,
-                    city: formData.city,
-                    payment_method: formData.paymentMethod,
-                    items: cart,
-                    total: total,
-                    status: 'new'
-                }
-            ]);
+            const { data, error } = await supabase.rpc('create_order', {
+                p_customer_name: formData.name,
+                p_phone: formData.phone,
+                p_shipping_address: formData.address,
+                p_city: formData.city,
+                p_state: '',
+                p_payment_method: formData.paymentMethod,
+                p_items: cart.map(item => ({ id: item.id, quantity: item.quantity }))
+            });
 
             if (error) throw error;
 
-            // Clear cart logic should be here (localStorage clear + state reset)
-            localStorage.removeItem('sb_cart');
-            window.location.href = '/?success=true'; // Simple redirect for now
+            const createdOrder = Array.isArray(data) ? data[0] : data;
+            if (!createdOrder?.order_number) throw new Error('لم يتم إنشاء رقم الطلب');
+            clearCart();
+            navigate(`/track-order?order=${encodeURIComponent(createdOrder.order_number)}`);
         } catch (error: any) {
             console.error(error);
             alert('فشل إنشاء الطلب: ' + error.message);

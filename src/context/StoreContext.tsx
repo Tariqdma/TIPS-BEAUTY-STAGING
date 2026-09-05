@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase';
 interface StoreContextType {
     products: Product[];
     cart: CartItem[];
+    clearCart: () => void;
     wishlist: string[];
     addToCart: (product: Product, variantId?: string) => void;
     removeFromCart: (productId: string, variantId?: string) => void;
@@ -99,6 +100,8 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         setCart(prev => prev.map(item => (item.id === productId && item.selectedVariantId === variantId) ? { ...item, quantity } : item));
     }, [removeFromCart]);
 
+    const clearCart = React.useCallback(() => setCart([]), []);
+
     const toggleWishlist = React.useCallback((productId: string) => {
         setWishlist(prev =>
             prev.includes(productId)
@@ -110,7 +113,7 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
     return (
-        <StoreContext.Provider value={{ products, cart, wishlist, recentlyViewed, addToCart, removeFromCart, updateQuantity, toggleWishlist, addToRecentlyViewed, cartCount }}>
+        <StoreContext.Provider value={{ products, cart, clearCart, wishlist, recentlyViewed, addToCart, removeFromCart, updateQuantity, toggleWishlist, addToRecentlyViewed, cartCount }}>
             {children}
         </StoreContext.Provider>
     );

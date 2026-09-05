@@ -44,7 +44,11 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/product/:id" element={<ProductDetailsPage />} />
           <Route path="/cart" element={<CartPage />} />
-          <Route path="/track-order" element={<OrderTrackingPage />} />
+          <Route path="/track-order" element={
+            <ProtectedRoute>
+              <OrderTrackingPage />
+            </ProtectedRoute>
+          } />
           <Route path="/ai-chat" element={<AIChatPage />} />
 
           {/* Auth Routes */}
