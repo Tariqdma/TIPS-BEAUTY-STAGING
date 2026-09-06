@@ -10,6 +10,9 @@ import { WarehousesPage } from './pages/WarehousesPage';
 import { MarketingPage } from './pages/MarketingPage';
 import { BIPage } from './pages/BIPage';
 import { CategoriesPage } from './pages/CategoriesPage';
+import { PaymentsPage } from './pages/PaymentsPage';
+import { ReturnsManagementPage } from './pages/ReturnsManagementPage';
+import { NotificationsPage } from './pages/NotificationsPage';
 
 function App() {
   return (
@@ -21,6 +24,9 @@ function App() {
 
         {/* Order Management */}
         <Route path="orders" element={<OrderListPage />} />
+        <Route path="payments" element={<PaymentsPage />} />
+        <Route path="returns" element={<ReturnsManagementPage />} />
+        <Route path="notifications" element={<NotificationsPage />} />
         <Route path="logistics" element={<LogisticsPage />} />
         <Route path="warehouses" element={<WarehousesPage />} />
 

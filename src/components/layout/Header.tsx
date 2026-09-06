@@ -43,6 +43,8 @@ export const Header: React.FC<HeaderProps> = ({ cartCount }) => {
                                     <User className="w-4 h-4" />
                                     <span>حسابي</span>
                                 </Link>
+                                <Link to="/loyalty" className={`hover:text-brand-blue transition-colors ${currentPath === '/loyalty' ? 'text-brand-blue font-bold' : 'text-gray-600'}`}>نقاطي</Link>
+                                <Link to="/returns" className={`hover:text-brand-blue transition-colors ${currentPath === '/returns' ? 'text-brand-blue font-bold' : 'text-gray-600'}`}>المرتجعات</Link>
                                 <button
                                     onClick={signOut}
                                     className="text-gray-500 hover:text-red-500 transition-colors"
@@ -85,6 +87,8 @@ export const Header: React.FC<HeaderProps> = ({ cartCount }) => {
                                 <Link to="/settings" className={`p-2 rounded-lg flex items-center gap-2 ${currentPath === '/settings' ? 'bg-brand-blue-soft text-brand-blue font-bold' : 'text-gray-600'}`} onClick={() => setIsMenuOpen(false)}>
                                     <User className="w-4 h-4" /> حسابي
                                 </Link>
+                                <Link to="/loyalty" className={`p-2 rounded-lg ${currentPath === '/loyalty' ? 'bg-brand-blue-soft text-brand-blue font-bold' : 'text-gray-600'}`} onClick={() => setIsMenuOpen(false)}>نقاط الجمال</Link>
+                                <Link to="/returns" className={`p-2 rounded-lg ${currentPath === '/returns' ? 'bg-brand-blue-soft text-brand-blue font-bold' : 'text-gray-600'}`} onClick={() => setIsMenuOpen(false)}>المرتجعات والاستبدال</Link>
                                 <button onClick={() => { signOut(); setIsMenuOpen(false); }} className="p-2 rounded-lg flex items-center gap-2 text-red-500 hover:bg-red-50 w-full text-right">
                                     <LogOut className="w-4 h-4" /> تسجيل الخروج
                                 </button>

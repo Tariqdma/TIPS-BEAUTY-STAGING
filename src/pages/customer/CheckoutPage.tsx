@@ -1,180 +1,75 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStore } from '../../context/StoreContext';
 import { supabase } from '../../lib/supabase';
-import { PaymentMethod } from '../../types';
-import { CreditCard, Wallet, Banknote } from 'lucide-react';
+import { CreditCard, Gift, Landmark, Loader2, Ticket, Wallet } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+
+type PaymentMethod = {
+    code: 'COD' | 'BANK_TRANSFER' | 'Fawry' | 'Mychashi';
+    name_ar: string;
+    description_ar: string | null;
+    requires_proof: boolean;
+    account_details: Record<string, string> | null;
+};
 
 export const CheckoutPage: React.FC = () => {
     const { cart, cartCount, clearCart } = useStore();
     const { user } = useAuth();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
-    const [formData, setFormData] = useState({
-        name: '',
-        phone: '',
-        address: '',
-        city: 'الخرطوم', // Default
-        paymentMethod: 'COD' as PaymentMethod
-    });
+    const [methods, setMethods] = useState<PaymentMethod[]>([]);
+    const [points, setPoints] = useState(0);
+    const [formData, setFormData] = useState({ name: '', phone: '', address: '', city: 'الخرطوم', paymentMethod: 'COD' as PaymentMethod['code'], couponCode: '', pointsToRedeem: '' });
 
     useEffect(() => {
-        if (user) {
-            setFormData(prev => ({
-                ...prev,
-                name: user.user_metadata.full_name || '',
-                phone: user.user_metadata.phone || ''
-            }));
-        }
+        void supabase.from('payment_methods').select('code,name_ar,description_ar,requires_proof,account_details').order('display_order').then(({ data }) => {
+            const available = (data || []) as PaymentMethod[];
+            setMethods(available);
+            if (available.length && !available.some((method) => method.code === formData.paymentMethod)) setFormData((current) => ({ ...current, paymentMethod: available[0].code }));
+        });
+    }, []);
+
+    useEffect(() => {
+        if (!user) return;
+        setFormData((current) => ({ ...current, name: user.user_metadata.full_name || '', phone: user.user_metadata.phone || '' }));
+        void supabase.from('profiles').select('beauty_points').eq('id', user.id).maybeSingle().then(({ data }) => setPoints(Number(data?.beauty_points || 0)));
     }, [user]);
 
-    const subtotal = cart.reduce((sum, item) => sum + (item.discountedPrice || item.price) * item.quantity, 0);
+    const subtotal = useMemo(() => cart.reduce((sum, item) => sum + (item.discountedPrice || item.price) * item.quantity, 0), [cart]);
     const shipping = 1500;
-    const total = subtotal + shipping;
+    const selectedMethod = methods.find((method) => method.code === formData.paymentMethod);
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const methodIcon = (code: PaymentMethod['code']) => code === 'COD' ? Wallet : code === 'BANK_TRANSFER' ? Landmark : CreditCard;
 
-        if (!user) {
-            alert('يرجى تسجيل الدخول لإتمام الطلب');
-            navigate('/login', { state: { from: window.location } });
-            return;
-        }
-
+    const handleSubmit = async (event: React.FormEvent) => {
+        event.preventDefault();
+        if (!user) { navigate('/login', { state: { from: window.location } }); return; }
         setLoading(true);
-
         try {
-            const { data, error } = await supabase.rpc('create_order', {
+            const { data, error } = await supabase.rpc('checkout_order', {
                 p_customer_name: formData.name,
                 p_phone: formData.phone,
                 p_shipping_address: formData.address,
                 p_city: formData.city,
                 p_state: '',
                 p_payment_method: formData.paymentMethod,
-                p_items: cart.map(item => ({ id: item.id, quantity: item.quantity }))
+                p_items: cart.map((item) => ({ id: item.id, quantity: item.quantity })),
+                p_coupon_code: formData.couponCode.trim() || null,
+                p_points_to_redeem: Number(formData.pointsToRedeem || 0),
             });
-
             if (error) throw error;
-
-            const createdOrder = Array.isArray(data) ? data[0] : data;
-            if (!createdOrder?.order_number) throw new Error('لم يتم إنشاء رقم الطلب');
+            const order = Array.isArray(data) ? data[0] : data;
+            if (!order?.order_number || !order?.order_id) throw new Error('لم يتم إنشاء رقم الطلب');
             clearCart();
-            navigate(`/track-order?order=${encodeURIComponent(createdOrder.order_number)}`);
+            if (selectedMethod?.requires_proof) navigate(`/payment-proof?order=${encodeURIComponent(order.order_id)}&number=${encodeURIComponent(order.order_number)}`);
+            else navigate(`/track-order?order=${encodeURIComponent(order.order_number)}`);
         } catch (error: any) {
-            console.error(error);
-            alert('فشل إنشاء الطلب: ' + error.message);
-        } finally {
-            setLoading(false);
-        }
+            alert(`فشل إنشاء الطلب: ${error.message || 'يرجى المحاولة مرة أخرى'}`);
+        } finally { setLoading(false); }
     };
 
-    if (cartCount === 0) return <div className="p-8 text-center bg-white rounded-xl shadow-sm border border-gray-100 m-4">السلة فارغة</div>;
+    if (cartCount === 0) return <div className="m-4 rounded-xl border border-gray-100 bg-white p-8 text-center shadow-sm">السلة فارغة</div>;
 
-    const paymentMethods = [
-        { id: 'COD', label: 'الدفع عند الاستلام', icon: Banknote, desc: 'ادفع نقداً عند وصول المندوب' },
-        { id: 'Fawry', label: 'فوري (Fawry)', icon: Wallet, desc: 'الدفع الآمن عبر فوري' },
-        { id: 'Mychashi', label: 'ماي كاشي (Mychashi)', icon: CreditCard, desc: 'الدفع الإلكتروني السريع' },
-    ];
-
-    return (
-        <div className="max-w-4xl mx-auto p-4 md:p-8">
-            <h1 className="text-2xl font-bold text-gray-800 mb-8">إتمام الطلب</h1>
-
-            <div className="grid md:grid-cols-2 gap-8">
-                {/* Form */}
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-4">
-                        <h2 className="font-bold border-b border-gray-50 pb-2">بيانات التوصيل</h2>
-                        <div>
-                            <label className="text-sm font-bold text-gray-700 block mb-1">الاسم بالكامل</label>
-                            <input required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 outline-none focus:ring-2 focus:ring-brand-blue" />
-                        </div>
-                        <div>
-                            <label className="text-sm font-bold text-gray-700 block mb-1">رقم الهاتف</label>
-                            <input required type="tel" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 outline-none focus:ring-2 focus:ring-brand-blue" />
-                        </div>
-                        <div>
-                            <label className="text-sm font-bold text-gray-700 block mb-1">المدينة</label>
-                            <select value={formData.city} onChange={e => setFormData({ ...formData, city: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 outline-none focus:ring-2 focus:ring-brand-blue">
-                                <option value="الخرطوم">الخرطوم</option>
-                                <option value="بحري">بحري</option>
-                                <option value="أم درمان">أم درمان</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label className="text-sm font-bold text-gray-700 block mb-1">العنوان بالتفصيل</label>
-                            <textarea required value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 outline-none focus:ring-2 focus:ring-brand-blue" rows={3} />
-                        </div>
-                    </div>
-
-                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-4">
-                        <h2 className="font-bold border-b border-gray-50 pb-2">طريقة الدفع</h2>
-                        <div className="space-y-3">
-                            {paymentMethods.map((pm) => (
-                                <label key={pm.id} className={`flex items-center gap-4 p-4 rounded-xl border cursor-pointer transition-all ${formData.paymentMethod === pm.id ? 'border-brand-blue bg-brand-blue-soft' : 'border-gray-200 hover:bg-gray-50'}`}>
-                                    <input
-                                        type="radio"
-                                        name="payment"
-                                        value={pm.id}
-                                        checked={formData.paymentMethod === pm.id}
-                                        onChange={() => setFormData({ ...formData, paymentMethod: pm.id as PaymentMethod })}
-                                        className="w-4 h-4 text-brand-blue focus:ring-brand-blue"
-                                    />
-                                    <div className={`p-2 rounded-lg ${formData.paymentMethod === pm.id ? 'bg-white' : 'bg-gray-100'}`}>
-                                        <pm.icon className={`w-6 h-6 ${formData.paymentMethod === pm.id ? 'text-brand-blue' : 'text-gray-500'}`} />
-                                    </div>
-                                    <div>
-                                        <p className="font-bold text-gray-800">{pm.label}</p>
-                                        <p className="text-xs text-gray-500">{pm.desc}</p>
-                                    </div>
-                                </label>
-                            ))}
-                        </div>
-                    </div>
-
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full bg-brand-blue hover:bg-blue-700 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-blue-200 flex items-center justify-center gap-2"
-                    >
-                        {loading ? 'جاري المعالجة...' : `تأكيد الطلب (${total.toLocaleString()} ج.س)`}
-                    </button>
-                </form>
-
-                {/* Summary */}
-                <div className="h-fit bg-gray-50 p-6 rounded-2xl border border-gray-200 sticky top-24">
-                    <h3 className="font-bold text-gray-800 mb-4">ملخص الطلب ({cartCount} منتجات)</h3>
-                    <div className="space-y-3 mb-6 max-h-60 overflow-y-auto pr-2">
-                        {cart.map((item) => (
-                            <div key={`${item.id}-${item.selectedVariantId}`} className="flex gap-3 text-sm">
-                                <img src={item.image} className="w-12 h-12 rounded-lg object-cover" alt="" />
-                                <div className="flex-1">
-                                    <p className="font-bold text-gray-800">{item.name_ar}</p>
-                                    <div className="flex justify-between mt-1">
-                                        <span className="text-gray-500">x{item.quantity}</span>
-                                        <span className="font-medium">{(item.discountedPrice || item.price).toLocaleString()} ج.س</span>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                    <div className="space-y-2 border-t border-gray-200 pt-4">
-                        <div className="flex justify-between text-gray-600">
-                            <span>المجموع</span>
-                            <span>{subtotal.toLocaleString()} ج.س</span>
-                        </div>
-                        <div className="flex justify-between text-gray-600">
-                            <span>التوصيل</span>
-                            <span>{shipping.toLocaleString()} ج.س</span>
-                        </div>
-                        <div className="flex justify-between font-bold text-lg text-gray-800 border-top pt-2">
-                            <span>الإجمالي</span>
-                            <span className="text-brand-blue">{total.toLocaleString()} ج.س</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
+    return <div className="mx-auto max-w-5xl p-4 md:p-8"><div className="mb-8"><h1 className="text-2xl font-bold text-gray-800">إتمام الطلب</h1><p className="mt-1 text-sm text-gray-500">السعر والمخزون والخصومات تُراجع بأمان عند تأكيد الطلب.</p></div><div className="grid gap-8 md:grid-cols-2"><form onSubmit={handleSubmit} className="space-y-6"><section className="space-y-4 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm"><h2 className="border-b border-gray-50 pb-2 font-bold">بيانات التوصيل</h2><input required value={formData.name} onChange={(event) => setFormData({ ...formData, name: event.target.value })} placeholder="الاسم بالكامل" className="w-full rounded-lg border border-gray-200 bg-gray-50 p-3 outline-none focus:ring-2 focus:ring-brand-blue"/><input required type="tel" value={formData.phone} onChange={(event) => setFormData({ ...formData, phone: event.target.value })} placeholder="رقم الهاتف" className="w-full rounded-lg border border-gray-200 bg-gray-50 p-3 outline-none focus:ring-2 focus:ring-brand-blue"/><select value={formData.city} onChange={(event) => setFormData({ ...formData, city: event.target.value })} className="w-full rounded-lg border border-gray-200 bg-gray-50 p-3 outline-none focus:ring-2 focus:ring-brand-blue"><option value="الخرطوم">الخرطوم</option><option value="بحري">بحري</option><option value="أم درمان">أم درمان</option></select><textarea required value={formData.address} onChange={(event) => setFormData({ ...formData, address: event.target.value })} placeholder="العنوان بالتفصيل" rows={3} className="w-full rounded-lg border border-gray-200 bg-gray-50 p-3 outline-none focus:ring-2 focus:ring-brand-blue"/></section><section className="space-y-3 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm"><h2 className="border-b border-gray-50 pb-2 font-bold">طريقة الدفع</h2>{methods.length ? methods.map((method) => { const Icon = methodIcon(method.code); return <label key={method.code} className={`flex cursor-pointer items-center gap-4 rounded-xl border p-4 transition-all ${formData.paymentMethod === method.code ? 'border-brand-blue bg-brand-blue-soft' : 'border-gray-200 hover:bg-gray-50'}`}><input type="radio" checked={formData.paymentMethod === method.code} onChange={() => setFormData({ ...formData, paymentMethod: method.code })}/><Icon className="h-6 w-6 text-brand-blue"/><span><b className="block text-gray-800">{method.name_ar}</b><small className="text-gray-500">{method.description_ar}{method.requires_proof ? ' سيتم طلب إثبات التحويل بعد إنشاء الطلب.' : ''}</small></span></label>; }) : <div className="flex items-center gap-2 text-sm text-gray-500"><Loader2 className="h-4 w-4 animate-spin"/>جارٍ تحميل طرق الدفع...</div>}</section><section className="space-y-3 rounded-2xl border border-indigo-100 bg-indigo-50/50 p-6"><div className="flex items-center gap-2"><Ticket className="h-5 w-5 text-indigo-600"/><h2 className="font-bold">كوبون ونقاط الجمال</h2></div><input value={formData.couponCode} onChange={(event) => setFormData({ ...formData, couponCode: event.target.value.toUpperCase() })} placeholder="أدخل كود الخصم إن وجد" className="w-full rounded-lg border border-indigo-100 bg-white p-3 uppercase outline-none focus:ring-2 focus:ring-brand-blue"/><div className="rounded-xl bg-white p-3 text-sm text-gray-600"><span className="font-bold text-indigo-700">رصيدك: {points.toLocaleString()} نقطة</span><p className="mt-1 text-xs">يُحدد النظام قيمة الخصم بعد التحقق من الرصيد والحد الأدنى.</p></div><input type="number" min="0" max={points} value={formData.pointsToRedeem} onChange={(event) => setFormData({ ...formData, pointsToRedeem: event.target.value })} placeholder="عدد النقاط التي تريدين استبدالها" className="w-full rounded-lg border border-indigo-100 bg-white p-3 outline-none focus:ring-2 focus:ring-brand-blue"/></section><button type="submit" disabled={loading || !methods.length} className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-blue py-4 font-bold text-white shadow-lg shadow-blue-200 transition-all hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60">{loading && <Loader2 className="h-5 w-5 animate-spin"/>}{loading ? 'جارٍ تأكيد الطلب...' : 'تأكيد الطلب'}</button></form><aside className="h-fit rounded-2xl border border-gray-200 bg-gray-50 p-6 md:sticky md:top-24"><h3 className="mb-4 font-bold text-gray-800">ملخص الطلب ({cartCount} منتجات)</h3><div className="mb-6 max-h-60 space-y-3 overflow-y-auto pr-2">{cart.map((item) => <div key={`${item.id}-${item.selectedVariantId}`} className="flex gap-3 text-sm"><img src={item.image} className="h-12 w-12 rounded-lg object-cover" alt=""/><div className="flex-1"><p className="font-bold text-gray-800">{item.name_ar}</p><div className="mt-1 flex justify-between"><span className="text-gray-500">x{item.quantity}</span><span>{((item.discountedPrice || item.price) * item.quantity).toLocaleString()} ج.س</span></div></div></div>)}</div><div className="space-y-2 border-t border-gray-200 pt-4 text-sm"><div className="flex justify-between text-gray-600"><span>المجموع التقديري</span><span>{subtotal.toLocaleString()} ج.س</span></div><div className="flex justify-between text-gray-600"><span>التوصيل التقديري</span><span>{shipping.toLocaleString()} ج.س</span></div><div className="flex justify-between border-t pt-2 text-lg font-bold text-gray-800"><span>قبل الخصومات</span><span className="text-brand-blue">{(subtotal + shipping).toLocaleString()} ج.س</span></div><p className="pt-2 text-xs text-gray-400">يظهر الإجمالي النهائي بعد اعتماد الكوبون والنقاط في النظام.</p></div></aside></div></div>;
 };

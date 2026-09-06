@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Outlet, Link, useLocation, Navigate } from 'react-router-dom';
 import {
     LayoutDashboard, Package, LogOut, Menu, X, Loader2,
-    ShoppingBag, Tag, TrendingUp, Sparkles, Truck, Warehouse
+    ShoppingBag, Tag, TrendingUp, Sparkles, Truck, Warehouse, CreditCard, RotateCcw, BellRing
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -26,6 +26,9 @@ export const AdminLayout: React.FC = () => {
     const menuItems = [
         { path: '/dashboard', icon: LayoutDashboard, label: 'لوحة التحكم', badge: null },
         { path: '/orders', icon: ShoppingBag, label: 'إدارة الطلبات', badge: '5' },
+        { path: '/payments', icon: CreditCard, label: 'المدفوعات', badge: null },
+        { path: '/returns', icon: RotateCcw, label: 'المرتجعات', badge: null },
+        { path: '/notifications', icon: BellRing, label: 'الإشعارات', badge: null },
         { path: '/logistics', icon: Truck, label: 'الخدمات اللوجستية', badge: null },
         { path: '/warehouses', icon: Warehouse, label: 'الفروع والمخازن', badge: null },
         { path: '/products', icon: Package, label: 'المنتجات والمخزون', badge: null },

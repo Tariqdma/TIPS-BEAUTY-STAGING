@@ -8,6 +8,9 @@ import { CheckoutPage } from './src/pages/customer/CheckoutPage';
 import { OrderTrackingPage } from './src/pages/customer/OrderTrackingPage';
 import { SettingsPage } from './src/pages/customer/SettingsPage';
 import { AIChatPage } from './src/pages/customer/AIChatPage';
+import { PaymentProofPage } from './src/pages/customer/PaymentProofPage';
+import { LoyaltyPage } from './src/pages/customer/LoyaltyPage';
+import { ReturnsPage } from './src/pages/customer/ReturnsPage';
 import { useStore } from './src/context/StoreContext';
 import { LoginPage } from './src/pages/auth/LoginPage';
 import { SignupPage } from './src/pages/auth/SignupPage';
@@ -49,6 +52,9 @@ function App() {
               <OrderTrackingPage />
             </ProtectedRoute>
           } />
+          <Route path="/payment-proof" element={<ProtectedRoute><PaymentProofPage /></ProtectedRoute>} />
+          <Route path="/loyalty" element={<ProtectedRoute><LoyaltyPage /></ProtectedRoute>} />
+          <Route path="/returns" element={<ProtectedRoute><ReturnsPage /></ProtectedRoute>} />
           <Route path="/ai-chat" element={<AIChatPage />} />
 
           {/* Auth Routes */}

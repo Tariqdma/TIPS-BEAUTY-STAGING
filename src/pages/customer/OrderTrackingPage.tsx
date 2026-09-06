@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { Search, Truck, Package, Clock, AlertCircle } from 'lucide-react';
-import { CheckCircle } from 'lucide-react';
+import { Search, Truck, Package, Clock, AlertCircle, CheckCircle, CreditCard, MapPin } from 'lucide-react';
 
 export const OrderTrackingPage: React.FC = () => {
     const [searchParams] = useSearchParams();
@@ -10,142 +9,10 @@ export const OrderTrackingPage: React.FC = () => {
     const [order, setOrder] = useState<any | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-
-    const handleTrack = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setLoading(true);
-        setError('');
-        setOrder(null);
-
-        try {
-            const { data, error } = await supabase
-                .from('orders')
-                .select('id,order_number,customer_name,items,total,status,payment_status,shipping_address,city,created_at')
-                .eq('order_number', orderId.trim())
-                .single();
-
-            if (error) throw error;
-            if (data) setOrder(data);
-        } catch (err) {
-            setError('لم يتم العثور على طلب بهذا الرقم. يرجى التأكد من الرقم والمحاولة مرة أخرى.');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const getStatusStep = (status: string) => {
-        const steps = ['new', 'confirmed', 'preparing', 'shipped', 'delivered'];
-        return steps.indexOf(status) + 1;
-    };
-
-    const steps = [
-        { id: 'new', label: 'تم الاستلام', icon: Clock },
-        { id: 'confirmed', label: 'مؤكد', icon: CheckCircle },
-        { id: 'preparing', label: 'جاري التجهيز', icon: Package },
-        { id: 'shipped', label: 'خرج للتوصيل', icon: Truck },
-        { id: 'delivered', label: 'تم التوصيل', icon: CheckCircle },
-    ];
-
-    return (
-        <div className="max-w-3xl mx-auto p-8 min-h-[60vh]">
-            <h1 className="text-3xl font-bold text-center text-gray-800 mb-8">تتبع طلبك</h1>
-
-            <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 mb-8">
-                <form onSubmit={handleTrack} className="flex gap-4">
-                    <input
-                        type="text"
-                        placeholder="أدخل رقم الطلب (مثل TB-...)"
-                        value={orderId}
-                        onChange={e => setOrderId(e.target.value)}
-                        className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-6 py-4 outline-none focus:ring-2 focus:ring-brand-blue"
-                        required
-                    />
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="bg-brand-blue hover:bg-blue-700 text-white font-bold px-8 rounded-xl transition-all shadow-lg shadow-blue-200 flex items-center gap-2"
-                    >
-                        {loading ? '...' : <Search className="w-5 h-5" />}
-                        تتبع
-                    </button>
-                </form>
-                {error && (
-                    <div className="mt-4 p-4 bg-red-50 text-red-600 rounded-xl flex items-center gap-2">
-                        <AlertCircle className="w-5 h-5" />
-                        {error}
-                    </div>
-                )}
-            </div>
-
-            {order && (
-                <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 animate-fadeIn">
-                    <div className="flex justify-between items-center mb-8 border-b border-gray-100 pb-4">
-                        <div>
-                            <p className="text-gray-500 text-sm">رقم الطلب</p>
-                            <p className="font-mono font-bold text-gray-800">{order.order_number}</p>
-                        </div>
-                        <div className="text-left">
-                            <p className="text-gray-500 text-sm">تاريخ الطلب</p>
-                            <p className="font-bold text-gray-800">{new Date(order.created_at).toLocaleDateString('ar-EG')}</p>
-                        </div>
-                    </div>
-
-                    {/* Progress Bar */}
-                    <div className="relative flex justify-between mb-8 overflow-hidden">
-                        {/* Line */}
-                        <div className="absolute top-5 left-0 right-0 h-1 bg-gray-100 -z-0">
-                            <div
-                                className="h-full bg-green-500 transition-all duration-1000"
-                                style={{ width: `${(getStatusStep(order.status) / 5) * 100}%` }}
-                            ></div>
-                        </div>
-
-                        {steps.map((step, idx) => {
-                            const isActive = getStatusStep(order.status) > idx;
-                            const isCurrent = order.status === step.id;
-                            const StepIcon = step.icon;
-
-                            return (
-                                <div key={step.id} className="relative z-10 flex flex-col items-center gap-2">
-                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all ${isActive || isCurrent ? 'bg-green-500 border-green-500 text-white' : 'bg-white border-gray-200 text-gray-400'
-                                        }`}>
-                                        <StepIcon className="w-5 h-5" />
-                                    </div>
-                                    <span className={`text-xs font-bold ${isActive || isCurrent ? 'text-green-600' : 'text-gray-400'}`}>
-                                        {step.label}
-                                    </span>
-                                </div>
-                            );
-                        })}
-                    </div>
-
-                    <div className="bg-gray-50 p-4 rounded-xl mb-6">
-                        <h4 className="font-bold text-gray-800 mb-2">حالة الطلب الحالية:</h4>
-                        <p className="text-gray-600">
-                            {order.status === 'new' && 'تم استلام طلبك بنجاح وسيتم تأكيده قريباً.'}
-                            {order.status === 'confirmed' && 'تم تأكيد الطلب ويجري تجهيزه.'}
-                            {order.status === 'preparing' && 'يقوم فريقنا بتجهيز وتغليف طلبك بعناية.'}
-                            {order.status === 'shipped' && 'تم تسليم الطلب للمندوب وهو في الطريق إليك.'}
-                            {order.status === 'delivered' && 'تم توصيل الطلب. نتمنى أن ينال إعجابك!'}
-                        </p>
-                    </div>
-
-                    <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100">
-                        <h4 className="font-bold text-gray-800 p-4 border-b border-gray-50">موقع التوصيل (تقديري)</h4>
-                        <iframe
-                            width="100%"
-                            height="300"
-                            style={{ border: 0 }}
-                            loading="lazy"
-                            allowFullScreen
-                            src={`https://www.google.com/maps/embed/v1/place?key=YOUR_API_KEY&q=${encodeURIComponent(order.city + ', ' + order.shipping_address)}`}
-                        ></iframe>
-                        <div className="p-2 text-xs text-center text-gray-400">
-                            ملاحظة: الخريطة توضيحية وتعتمد على العنوان المدخل.
-                        </div>
-                    </div>
-                </div>
-            )}
-        </div>
-    );
+    const handleTrack = async (event: React.FormEvent) => { event.preventDefault(); setLoading(true); setError(''); setOrder(null); try { const { data, error: queryError } = await supabase.from('orders').select('id,order_number,total,status,payment_status,payment_method,shipping_address,city,created_at').eq('order_number', orderId.trim()).single(); if (queryError) throw queryError; setOrder(data); } catch { setError('لم يتم العثور على طلب بهذا الرقم. تأكدي من الرقم وسجلي الدخول بالحساب الذي أنشأ الطلب.'); } finally { setLoading(false); } };
+    const steps = [{ id: 'new', label: 'تم الاستلام', icon: Clock }, { id: 'confirmed', label: 'مؤكد', icon: CheckCircle }, { id: 'preparing', label: 'جاري التجهيز', icon: Package }, { id: 'shipped', label: 'خرج للتوصيل', icon: Truck }, { id: 'delivered', label: 'تم التوصيل', icon: CheckCircle }];
+    const current = Math.max(0, steps.findIndex((step) => step.id === order?.status));
+    const paymentLabel: Record<string, string> = { pending: 'بانتظار الدفع', proof_submitted: 'إثبات الدفع قيد المراجعة', paid: 'تم تأكيد الدفع', refunded: 'تم استرداد المبلغ' };
+    const statusMessage: Record<string, string> = { new: 'تم استلام طلبك بنجاح وسيتم تأكيده قريباً.', confirmed: 'تم تأكيد الطلب ويجري تجهيزه.', preparing: 'يقوم فريقنا بتجهيز وتغليف طلبك بعناية.', shipped: 'تم تسليم الطلب للمندوب وهو في الطريق إليك.', delivered: 'تم توصيل الطلب. نتمنى أن ينال إعجابك!' };
+    return <div className="mx-auto min-h-[60vh] max-w-3xl p-4 md:p-8"><h1 className="mb-8 text-center text-3xl font-bold text-gray-800">تتبع طلبك</h1><div className="mb-8 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm md:p-8"><form onSubmit={handleTrack} className="flex flex-col gap-3 sm:flex-row"><input type="text" placeholder="أدخل رقم الطلب (مثل TB-...)" value={orderId} onChange={(event) => setOrderId(event.target.value)} className="flex-1 rounded-xl border border-gray-200 bg-gray-50 px-5 py-3 outline-none focus:ring-2 focus:ring-brand-blue" required/><button type="submit" disabled={loading} className="flex items-center justify-center gap-2 rounded-xl bg-brand-blue px-7 py-3 font-bold text-white shadow-lg shadow-blue-200 transition-all hover:bg-blue-700 disabled:opacity-60">{loading ? '...' : <Search className="h-5 w-5"/>}تتبع</button></form>{error && <div className="mt-4 flex items-center gap-2 rounded-xl bg-red-50 p-4 text-red-600"><AlertCircle className="h-5 w-5"/>{error}</div>}</div>{order && <div className="animate-fadeIn rounded-2xl border border-gray-100 bg-white p-5 shadow-sm md:p-8"><div className="mb-8 flex flex-col gap-3 border-b border-gray-100 pb-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-sm text-gray-500">رقم الطلب</p><p className="font-mono font-bold text-gray-800">{order.order_number}</p></div><div className="sm:text-left"><p className="text-sm text-gray-500">تاريخ الطلب</p><p className="font-bold text-gray-800">{new Date(order.created_at).toLocaleDateString('ar-EG')}</p></div></div><div className="relative mb-8 flex justify-between gap-1 overflow-hidden">{steps.map((step, index) => { const Icon = step.icon; const active = index <= current; return <div key={step.id} className="relative z-10 flex min-w-0 flex-1 flex-col items-center gap-2"><div className={`flex h-9 w-9 items-center justify-center rounded-full border-2 text-xs transition-all sm:h-10 sm:w-10 ${active ? 'border-green-500 bg-green-500 text-white' : 'border-gray-200 bg-white text-gray-400'}`}><Icon className="h-4 w-4 sm:h-5 sm:w-5"/></div><span className={`text-center text-[9px] font-bold sm:text-xs ${active ? 'text-green-600' : 'text-gray-400'}`}>{step.label}</span>{index < steps.length - 1 && <span className={`absolute top-4 left-0 h-0.5 w-1/2 ${index < current ? 'bg-green-500' : 'bg-gray-200'}`}/>}</div>; })}</div><div className="grid gap-4 md:grid-cols-2"><div className="rounded-xl bg-gray-50 p-4"><h4 className="font-bold text-gray-800">حالة الطلب الحالية</h4><p className="mt-2 text-sm leading-6 text-gray-600">{statusMessage[order.status] || 'تم تحديث الطلب.'}</p></div><div className="rounded-xl bg-blue-50 p-4"><div className="flex items-center gap-2"><CreditCard className="h-5 w-5 text-brand-blue"/><h4 className="font-bold text-gray-800">حالة الدفع</h4></div><p className="mt-2 text-sm leading-6 text-gray-600">{paymentLabel[order.payment_status] || order.payment_status} · {order.payment_method}</p></div></div><div className="mt-4 flex gap-3 rounded-xl border border-gray-100 p-4"><MapPin className="h-5 w-5 shrink-0 text-brand-blue"/><div><h4 className="font-bold text-gray-800">عنوان التوصيل</h4><p className="mt-1 text-sm text-gray-600">{order.city} — {order.shipping_address}</p><p className="mt-2 text-xs text-gray-400">سيعرض الموقع المباشر ووقت الوصول المتوقع عندما يتم ربط نظام تتبع المندوبين ومزوّد الخرائط.</p></div></div></div>}</div>;
 };
