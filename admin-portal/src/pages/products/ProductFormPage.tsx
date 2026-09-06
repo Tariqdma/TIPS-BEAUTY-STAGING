@@ -5,7 +5,7 @@ import {
     Save, ArrowRight, Loader2, Image as ImageIcon,
     Plus, Trash2, Tag, DollarSign, Package,
     Sparkles, Globe, Info, ShieldCheck,
-    Search, Layout, Hash
+    Search, Layout, Hash, Upload
 } from 'lucide-react';
 import type { Product, ProductVariant } from '../../types';
 
@@ -16,6 +16,7 @@ export const ProductFormPage: React.FC = () => {
 
     const [loading, setLoading] = useState(false);
     const [fetching, setFetching] = useState(isEditMode);
+    const [uploadingImage, setUploadingImage] = useState(false);
     const [activeTab, setActiveTab] = useState<'basic' | 'inventory' | 'marketing' | 'seo'>('basic');
 
     const [formData, setFormData] = useState<Partial<Product>>({
@@ -114,6 +115,27 @@ export const ProductFormPage: React.FC = () => {
                 images: [...(prev.images || []), url],
                 image: prev.image || url // Set as main image if none exists
             }));
+        }
+    };
+
+    const uploadImage = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        event.target.value = '';
+        if (!file) return;
+        if (!file.type.startsWith('image/')) { alert('اختاري ملف صورة صالحاً.'); return; }
+        if (file.size > 5 * 1024 * 1024) { alert('حجم الصورة يجب ألا يتجاوز 5 ميجابايت.'); return; }
+        setUploadingImage(true);
+        try {
+            const extension = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+            const path = `catalog/${crypto.randomUUID()}.${extension}`;
+            const { error } = await supabase.storage.from('products').upload(path, file, { cacheControl: '3600', upsert: false, contentType: file.type });
+            if (error) throw error;
+            const { data } = supabase.storage.from('products').getPublicUrl(path);
+            setFormData(prev => ({ ...prev, images: [...(prev.images || []), data.publicUrl], image: prev.image || data.publicUrl }));
+        } catch (error: any) {
+            alert('تعذر رفع الصورة: ' + (error.message || 'حاولي مرة أخرى.'));
+        } finally {
+            setUploadingImage(false);
         }
     };
 
@@ -283,6 +305,12 @@ export const ProductFormPage: React.FC = () => {
                                             </h3>
                                             <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-1">Multi-angle visuals (1:1 Ratio recommended)</p>
                                         </div>
+                                        <div className="flex items-center gap-3">
+                                        <label className={`bg-blue-50 text-brand-blue px-6 py-2 rounded-xl text-xs font-black flex items-center gap-2 hover:bg-blue-100 transition-all border border-blue-100 cursor-pointer ${uploadingImage ? 'opacity-60 pointer-events-none' : ''}`}>
+                                            <Upload className="w-4 h-4" />
+                                            {uploadingImage ? 'جاري الرفع...' : 'رفع من الجهاز'}
+                                            <input type="file" accept="image/png,image/jpeg,image/webp" onChange={uploadImage} className="hidden" disabled={uploadingImage} />
+                                        </label>
                                         <button
                                             type="button"
                                             onClick={addImage}
@@ -291,6 +319,7 @@ export const ProductFormPage: React.FC = () => {
                                             <Plus className="w-4 h-4" />
                                             إضافة صور إضافية
                                         </button>
+                                        </div>
                                     </div>
 
                                     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
