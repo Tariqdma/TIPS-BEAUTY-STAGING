@@ -2,13 +2,13 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Search, ShoppingBag, User, RefreshCw, Warehouse } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
-type OrderStatus = 'new' | 'confirmed' | 'preparing' | 'shipped' | 'delivered' | 'cancelled';
+type OrderStatus = 'new' | 'confirmed' | 'preparing' | 'shipped' | 'delivered' | 'delivery_failed' | 'cancelled';
 type Order = { id: string; order_number: string | null; customer_name: string | null; phone: string | null; status: OrderStatus; payment_method: string | null; payment_status: string | null; financial_status: string | null; total: number; shipping_fee: number; city: string | null; shipping_address: string | null; driver_id: string | null; fulfillment_warehouse_id: string | null; created_at: string };
 type Driver = { id: string; name: string; phone: string; status: 'active' | 'busy' | 'offline' };
 type WarehouseItem = { id: string; name: string; city: string; is_active: boolean };
 
 const statusOptions: { value: OrderStatus; label: string }[] = [
-    { value: 'new', label: 'طلب جديد' }, { value: 'confirmed', label: 'تم التأكيد' }, { value: 'preparing', label: 'جاري التجهيز' }, { value: 'shipped', label: 'خرج للتوصيل' }, { value: 'delivered', label: 'تم التوصيل' }, { value: 'cancelled', label: 'ملغي' },
+    { value: 'new', label: 'طلب جديد' }, { value: 'confirmed', label: 'تم التأكيد' }, { value: 'preparing', label: 'جاري التجهيز' }, { value: 'shipped', label: 'خرج للتوصيل' }, { value: 'delivered', label: 'تم التوصيل' }, { value: 'delivery_failed', label: 'تعذر التسليم' }, { value: 'cancelled', label: 'ملغي' },
 ];
 
 export const OrderListPage: React.FC = () => {
@@ -53,7 +53,7 @@ export const OrderListPage: React.FC = () => {
         setOrders((current) => current.map((item) => item.id === order.id ? { ...item, ...values } : item));
     };
 
-    const getStatusStyles = (status: OrderStatus) => ({ new: 'bg-blue-50 text-blue-600 border-blue-100', confirmed: 'bg-amber-50 text-amber-600 border-amber-100', preparing: 'bg-purple-50 text-purple-600 border-purple-100', shipped: 'bg-indigo-50 text-indigo-600 border-indigo-100', delivered: 'bg-emerald-50 text-emerald-600 border-emerald-100', cancelled: 'bg-red-50 text-red-600 border-red-100' }[status]);
+    const getStatusStyles = (status: OrderStatus) => ({ new: 'bg-blue-50 text-blue-600 border-blue-100', confirmed: 'bg-amber-50 text-amber-600 border-amber-100', preparing: 'bg-purple-50 text-purple-600 border-purple-100', shipped: 'bg-indigo-50 text-indigo-600 border-indigo-100', delivered: 'bg-emerald-50 text-emerald-600 border-emerald-100', delivery_failed: 'bg-orange-50 text-orange-700 border-orange-100', cancelled: 'bg-red-50 text-red-600 border-red-100' }[status]);
     const driverName = (id: string | null) => drivers.find((driver) => driver.id === id)?.name || 'غير معين';
     const warehouseName = (id: string | null) => warehouses.find((warehouse) => warehouse.id === id)?.name || 'غير معين';
 
