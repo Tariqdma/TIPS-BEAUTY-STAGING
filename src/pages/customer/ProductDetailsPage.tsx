@@ -2,17 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Product } from '../../types';
 import { supabase } from '../../lib/supabase';
-import { Heart, Share2, ShoppingCart } from 'lucide-react';
+import { Bell, Heart, Share2, ShoppingCart } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { ReviewSection } from '../../components/ui/ReviewSection';
 import { RelatedProducts } from '../../components/ui/RelatedProducts';
+import { useAuth } from '../../context/AuthContext';
 
 export const ProductDetailsPage: React.FC = () => {
     const { id } = useParams();
     const { addToCart, wishlist, toggleWishlist, addToRecentlyViewed } = useStore();
+    const { user } = useAuth();
     const [product, setProduct] = useState<Product | null>(null);
     const [loading, setLoading] = useState(true);
     const [activeImageIndex, setActiveImageIndex] = useState(0);
+    const [restockMessage, setRestockMessage] = useState('');
 
     useEffect(() => {
         if (id) {
@@ -73,6 +76,13 @@ export const ProductDetailsPage: React.FC = () => {
             addToCart(product);
             alert('تمت إضافة المنتج للسلة بنجاح');
         }
+    };
+
+    const subscribeRestock = async () => {
+        if (!product) return;
+        if (!user) { setRestockMessage('سجّلي الدخول أولاً لتفعيل التنبيه.'); return; }
+        const { error } = await supabase.from('restock_subscriptions').upsert({ customer_id: user.id, product_id: product.id, is_active: true, notified_at: null }, { onConflict: 'customer_id,product_id' });
+        setRestockMessage(error ? `تعذر حفظ التنبيه: ${error.message}` : 'تم تفعيل التنبيه. سنخبرك فور عودة المنتج للمخزون.');
     };
 
     if (loading) {
@@ -201,14 +211,7 @@ export const ProductDetailsPage: React.FC = () => {
                         </div>
                     </div>
 
-                    <button
-                        onClick={handleAddToCart}
-                        disabled={product.stock === 0}
-                        className="w-full bg-brand-blue hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-blue-100"
-                    >
-                        <ShoppingCart className="w-5 h-5" />
-                        {product.stock > 0 ? 'أضيفي للسلة' : 'غير متوفر'}
-                    </button>
+                    {product.stock > 0 ? <button onClick={handleAddToCart} className="w-full bg-brand-blue hover:bg-blue-700 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-blue-100"><ShoppingCart className="w-5 h-5" />أضيفي للسلة</button> : <div className="space-y-3"><button onClick={() => void subscribeRestock()} className="w-full bg-brand-blue hover:bg-blue-700 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-blue-100"><Bell className="w-5 h-5" />نبهيني عند توفره</button>{restockMessage && <p className="rounded-xl bg-blue-50 p-3 text-center text-sm font-medium text-brand-blue">{restockMessage}</p>}</div>}
                 </div>
             </div>
 

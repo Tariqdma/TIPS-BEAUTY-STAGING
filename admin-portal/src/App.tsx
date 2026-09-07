@@ -13,6 +13,9 @@ import { CategoriesPage } from './pages/CategoriesPage';
 import { PaymentsPage } from './pages/PaymentsPage';
 import { ReturnsManagementPage } from './pages/ReturnsManagementPage';
 import { NotificationsPage } from './pages/NotificationsPage';
+import { StorefrontPage } from './pages/StorefrontPage';
+import { DeliveryZonesPage } from './pages/DeliveryZonesPage';
+import { AffiliatesPage } from './pages/AffiliatesPage';
 
 function App() {
   return (
@@ -27,6 +30,9 @@ function App() {
         <Route path="payments" element={<PaymentsPage />} />
         <Route path="returns" element={<ReturnsManagementPage />} />
         <Route path="notifications" element={<NotificationsPage />} />
+        <Route path="storefront" element={<StorefrontPage />} />
+        <Route path="delivery-zones" element={<DeliveryZonesPage />} />
+        <Route path="affiliates" element={<AffiliatesPage />} />
         <Route path="logistics" element={<LogisticsPage />} />
         <Route path="warehouses" element={<WarehousesPage />} />
 

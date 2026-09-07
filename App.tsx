@@ -11,6 +11,9 @@ import { AIChatPage } from './src/pages/customer/AIChatPage';
 import { PaymentProofPage } from './src/pages/customer/PaymentProofPage';
 import { LoyaltyPage } from './src/pages/customer/LoyaltyPage';
 import { ReturnsPage } from './src/pages/customer/ReturnsPage';
+import { CustomerNotificationsPage } from './src/pages/customer/CustomerNotificationsPage';
+import { ReferralPage } from './src/pages/customer/ReferralPage';
+import { AffiliatePage } from './src/pages/customer/AffiliatePage';
 import { useStore } from './src/context/StoreContext';
 import { LoginPage } from './src/pages/auth/LoginPage';
 import { SignupPage } from './src/pages/auth/SignupPage';
@@ -55,6 +58,9 @@ function App() {
           <Route path="/payment-proof" element={<ProtectedRoute><PaymentProofPage /></ProtectedRoute>} />
           <Route path="/loyalty" element={<ProtectedRoute><LoyaltyPage /></ProtectedRoute>} />
           <Route path="/returns" element={<ProtectedRoute><ReturnsPage /></ProtectedRoute>} />
+          <Route path="/notifications" element={<ProtectedRoute><CustomerNotificationsPage /></ProtectedRoute>} />
+          <Route path="/referrals" element={<ProtectedRoute><ReferralPage /></ProtectedRoute>} />
+          <Route path="/affiliate" element={<ProtectedRoute><AffiliatePage /></ProtectedRoute>} />
           <Route path="/ai-chat" element={<AIChatPage />} />
 
           {/* Auth Routes */}

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShoppingCart, User, LogOut, Menu, X } from 'lucide-react';
+import { ShoppingCart, User, LogOut, Menu, X, Bell } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
@@ -44,6 +44,8 @@ export const Header: React.FC<HeaderProps> = ({ cartCount }) => {
                                     <span>حسابي</span>
                                 </Link>
                                 <Link to="/loyalty" className={`hover:text-brand-blue transition-colors ${currentPath === '/loyalty' ? 'text-brand-blue font-bold' : 'text-gray-600'}`}>نقاطي</Link>
+                                <Link to="/referrals" className={`hover:text-brand-blue transition-colors ${currentPath === '/referrals' ? 'text-brand-blue font-bold' : 'text-gray-600'}`}>إحالاتي</Link>
+                                <Link to="/notifications" title="الإشعارات" className={`p-1 transition-colors ${currentPath === '/notifications' ? 'text-brand-blue' : 'text-gray-600 hover:text-brand-blue'}`}><Bell className="w-4 h-4" /></Link>
                                 <Link to="/returns" className={`hover:text-brand-blue transition-colors ${currentPath === '/returns' ? 'text-brand-blue font-bold' : 'text-gray-600'}`}>المرتجعات</Link>
                                 <button
                                     onClick={signOut}
@@ -88,6 +90,9 @@ export const Header: React.FC<HeaderProps> = ({ cartCount }) => {
                                     <User className="w-4 h-4" /> حسابي
                                 </Link>
                                 <Link to="/loyalty" className={`p-2 rounded-lg ${currentPath === '/loyalty' ? 'bg-brand-blue-soft text-brand-blue font-bold' : 'text-gray-600'}`} onClick={() => setIsMenuOpen(false)}>نقاط الجمال</Link>
+                                <Link to="/notifications" className={`p-2 rounded-lg ${currentPath === '/notifications' ? 'bg-brand-blue-soft text-brand-blue font-bold' : 'text-gray-600'}`} onClick={() => setIsMenuOpen(false)}>مركز الإشعارات</Link>
+                                <Link to="/referrals" className={`p-2 rounded-lg ${currentPath === '/referrals' ? 'bg-brand-blue-soft text-brand-blue font-bold' : 'text-gray-600'}`} onClick={() => setIsMenuOpen(false)}>كود الإحالة</Link>
+                                <Link to="/affiliate" className={`p-2 rounded-lg ${currentPath === '/affiliate' ? 'bg-brand-blue-soft text-brand-blue font-bold' : 'text-gray-600'}`} onClick={() => setIsMenuOpen(false)}>برنامج المسوقات</Link>
                                 <Link to="/returns" className={`p-2 rounded-lg ${currentPath === '/returns' ? 'bg-brand-blue-soft text-brand-blue font-bold' : 'text-gray-600'}`} onClick={() => setIsMenuOpen(false)}>المرتجعات والاستبدال</Link>
                                 <button onClick={() => { signOut(); setIsMenuOpen(false); }} className="p-2 rounded-lg flex items-center gap-2 text-red-500 hover:bg-red-50 w-full text-right">
                                     <LogOut className="w-4 h-4" /> تسجيل الخروج
