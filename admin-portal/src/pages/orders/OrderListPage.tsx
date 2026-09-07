@@ -44,13 +44,18 @@ export const OrderListPage: React.FC = () => {
     }), [orders, search, statusFilter]);
 
     const updateOrder = async (order: Order, values: Partial<Pick<Order, 'status' | 'driver_id' | 'fulfillment_warehouse_id'>>) => {
-        const { error: updateError } = await supabase.from('orders').update(values).eq('id', order.id);
-        if (updateError) { setError(updateError.message); return; }
-        if (values.status && values.status !== order.status) {
-            const { error: historyError } = await supabase.from('order_status_history').insert({ order_id: order.id, status: values.status, note: 'تم التحديث من لوحة الإدارة' });
-            if (historyError) { setError(historyError.message); return; }
-        }
-        setOrders((current) => current.map((item) => item.id === order.id ? { ...item, ...values } : item));
+        setError('');
+        const { data, error: updateError } = await supabase.rpc('admin_update_order_operation', {
+            p_order_id: order.id,
+            p_expected_status: order.status,
+            p_status: values.status ?? null,
+            p_driver_id: values.driver_id ?? null,
+            p_warehouse_id: values.fulfillment_warehouse_id ?? null,
+            p_note: 'تم التحديث من لوحة الإدارة',
+        });
+        if (updateError) { setError(updateError.message); void fetchOrders(); return; }
+        const result = Array.isArray(data) ? data[0] : data;
+        setOrders((current) => current.map((item) => item.id === order.id ? { ...item, ...(result || values) } : item));
     };
 
     const getStatusStyles = (status: OrderStatus) => ({ new: 'bg-blue-50 text-blue-600 border-blue-100', confirmed: 'bg-amber-50 text-amber-600 border-amber-100', preparing: 'bg-purple-50 text-purple-600 border-purple-100', shipped: 'bg-indigo-50 text-indigo-600 border-indigo-100', delivered: 'bg-emerald-50 text-emerald-600 border-emerald-100', delivery_failed: 'bg-orange-50 text-orange-700 border-orange-100', cancelled: 'bg-red-50 text-red-600 border-red-100' }[status]);

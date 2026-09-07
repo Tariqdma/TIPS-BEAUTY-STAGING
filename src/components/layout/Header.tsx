@@ -18,7 +18,7 @@ export const Header: React.FC<HeaderProps> = ({ cartCount }) => {
             <div className="max-w-4xl mx-auto px-4 py-3">
                 <div className="flex items-center justify-between">
                     <Link to="/" className="flex items-center gap-2 cursor-pointer group">
-                        <img src="/logo.png" alt="Tips Beauty" className="h-16 md:h-24 w-auto object-contain hover:scale-105 transition-transform duration-300 mix-blend-multiply" />
+                        <img src={`${import.meta.env.BASE_URL}logo.PNG`} alt="Tips Beauty" className="h-16 md:h-24 w-auto object-contain hover:scale-105 transition-transform duration-300 mix-blend-multiply" />
                     </Link>
 
                     {/* Mobile Menu Button */}

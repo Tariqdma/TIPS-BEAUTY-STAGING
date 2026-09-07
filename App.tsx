@@ -61,7 +61,7 @@ function App() {
           <Route path="/notifications" element={<ProtectedRoute><CustomerNotificationsPage /></ProtectedRoute>} />
           <Route path="/referrals" element={<ProtectedRoute><ReferralPage /></ProtectedRoute>} />
           <Route path="/affiliate" element={<ProtectedRoute><AffiliatePage /></ProtectedRoute>} />
-          <Route path="/ai-chat" element={<AIChatPage />} />
+          <Route path="/ai-chat" element={<ProtectedRoute><AIChatPage /></ProtectedRoute>} />
 
           {/* Auth Routes */}
           <Route path="/login" element={<LoginPage />} />

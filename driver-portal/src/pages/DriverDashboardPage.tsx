@@ -56,8 +56,13 @@ export const DriverDashboardPage: React.FC = () => {
     const stopLocationSharing = () => {
         if (watchId.current !== null && 'geolocation' in navigator) navigator.geolocation.clearWatch(watchId.current);
         watchId.current = null; setLocationSharing(false); setLocationStatus('تم إيقاف مشاركة الموقع');
+        void supabase.rpc('clear_driver_location');
     };
-    useEffect(() => () => { if (watchId.current !== null && 'geolocation' in navigator) navigator.geolocation.clearWatch(watchId.current); }, []);
+    useEffect(() => {
+        const clearOnExit = () => { if (document.visibilityState === 'hidden') stopLocationSharing(); };
+        document.addEventListener('visibilitychange', clearOnExit);
+        return () => { document.removeEventListener('visibilitychange', clearOnExit); if (watchId.current !== null && 'geolocation' in navigator) navigator.geolocation.clearWatch(watchId.current); void supabase.rpc('clear_driver_location'); };
+    }, []);
 
     const enRouteOrders = useMemo(() => orders.filter((order) => order.status === 'shipped'), [orders]);
     const startLocationSharing = () => {

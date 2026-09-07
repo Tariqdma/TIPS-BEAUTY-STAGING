@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStore } from '../../context/StoreContext';
 import { supabase } from '../../lib/supabase';
@@ -20,6 +20,7 @@ export const CheckoutPage: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [methods, setMethods] = useState<PaymentMethod[]>([]);
     const [points, setPoints] = useState(0);
+    const checkoutKey = useRef<string | null>(null);
     const [formData, setFormData] = useState({ name: '', phone: '', address: '', city: 'الخرطوم', paymentMethod: 'COD' as PaymentMethod['code'], couponCode: '', pointsToRedeem: '', referralCode: '', affiliateCode: '' });
 
     useEffect(() => {
@@ -45,6 +46,7 @@ export const CheckoutPage: React.FC = () => {
     const handleSubmit = async (event: React.FormEvent) => {
         event.preventDefault();
         if (!user) { navigate('/login', { state: { from: window.location } }); return; }
+        checkoutKey.current ||= `${Date.now()}-${crypto.randomUUID()}`;
         setLoading(true);
         try {
             const { data, error } = await supabase.rpc('checkout_order_with_growth', {
@@ -59,11 +61,13 @@ export const CheckoutPage: React.FC = () => {
                 p_points_to_redeem: Number(formData.pointsToRedeem || 0),
                 p_referral_code: formData.referralCode.trim() || null,
                 p_affiliate_code: formData.affiliateCode.trim() || null,
+                p_idempotency_key: checkoutKey.current,
             });
             if (error) throw error;
             const order = Array.isArray(data) ? data[0] : data;
             if (!order?.order_number || !order?.order_id) throw new Error('لم يتم إنشاء رقم الطلب');
             clearCart();
+            checkoutKey.current = null;
             if (selectedMethod?.requires_proof) navigate(`/payment-proof?order=${encodeURIComponent(order.order_id)}&number=${encodeURIComponent(order.order_number)}`);
             else navigate(`/track-order?order=${encodeURIComponent(order.order_number)}`);
         } catch (error: any) {

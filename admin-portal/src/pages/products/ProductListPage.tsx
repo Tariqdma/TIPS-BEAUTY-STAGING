@@ -184,10 +184,10 @@ export const ProductListPage: React.FC = () => {
                                     </td>
                                     <td className="px-8 py-6">
                                         <div className="flex items-center gap-3">
-                                            <div className={`w - 2 h - 2 rounded - full ${product.stock > 10 ? 'bg-emerald-500' : product.stock > 0 ? 'bg-amber-500' : 'bg-red-500'} `} />
+                                            <div className={`h-2 w-2 rounded-full ${product.stock > 10 ? 'bg-emerald-500' : product.stock > 0 ? 'bg-amber-500' : 'bg-red-500'}`} />
                                             <div>
-                                                <p className={`text - sm font - black ${product.stock === 0 ? 'text-red-500' : 'text-slate-700'} `}>
-                                                    {product.stock > 0 ? `${product.stock} مندوب` : 'نفذ الكمية'}
+                                                <p className={`text-sm font-black ${product.stock === 0 ? 'text-red-500' : 'text-slate-700'}`}>
+                                                    {product.stock > 0 ? `${product.stock} قطعة` : 'نفدت الكمية'}
                                                 </p>
                                                 {product.variants && product.variants.length > 0 && (
                                                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">{product.variants.length} Variants Active</p>
@@ -211,7 +211,7 @@ export const ProductListPage: React.FC = () => {
                                                 <Eye className="w-5 h-5" />
                                             </button>
                                             <Link
-                                                to={`/ products / edit / ${product.id} `}
+                                                to={`/products/edit/${product.id}`}
                                                 className="p-2 text-slate-400 hover:text-brand-blue hover:bg-blue-50 rounded-xl transition-all"
                                             >
                                                 <Edit className="w-5 h-5" />

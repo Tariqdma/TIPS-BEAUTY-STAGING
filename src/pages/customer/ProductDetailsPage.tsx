@@ -26,19 +26,18 @@ export const ProductDetailsPage: React.FC = () => {
     const fetchProduct = async (productId: string) => {
         try {
             const { data, error } = await supabase
-                .from('products')
-                .select('*')
-                .eq('id', productId)
-                .single();
+                .rpc('get_public_product', { p_product_id: productId });
 
             if (error) throw error;
 
-            if (data) {
+            const item = Array.isArray(data) ? data[0] : data;
+            if (item) {
                 const productWithReviews = {
-                    ...data,
-                    isImported: data.is_imported,
-                    skinType: data.skin_type,
-                    createdAt: data.created_at,
+                    ...item,
+                    isImported: item.is_imported,
+                    skinType: item.skin_type,
+                    createdAt: item.created_at,
+                    discountPercentage: item.discount_percentage,
                     reviews: []
                 };
                 setProduct(productWithReviews);
@@ -81,7 +80,7 @@ export const ProductDetailsPage: React.FC = () => {
     const subscribeRestock = async () => {
         if (!product) return;
         if (!user) { setRestockMessage('سجّلي الدخول أولاً لتفعيل التنبيه.'); return; }
-        const { error } = await supabase.from('restock_subscriptions').upsert({ customer_id: user.id, product_id: product.id, is_active: true, notified_at: null }, { onConflict: 'customer_id,product_id' });
+        const { error } = await supabase.rpc('subscribe_restock', { p_product_id: product.id });
         setRestockMessage(error ? `تعذر حفظ التنبيه: ${error.message}` : 'تم تفعيل التنبيه. سنخبرك فور عودة المنتج للمخزون.');
     };
 

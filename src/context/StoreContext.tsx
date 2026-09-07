@@ -22,7 +22,7 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const [products, setProducts] = useState<Product[]>([]);
 
     useEffect(() => {
-        supabase.from('products').select('*').then(({ data }) => {
+        supabase.rpc('get_public_products').then(({ data }) => {
             if (data) {
                 setProducts(data.map((p: any) => ({
                     ...p,
