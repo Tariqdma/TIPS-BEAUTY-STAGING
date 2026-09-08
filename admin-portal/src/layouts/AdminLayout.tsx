@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Outlet, Link, useLocation, Navigate } from 'react-router-dom';
 import {
     LayoutDashboard, Package, LogOut, Menu, X, Loader2,
-    ShoppingBag, Tag, TrendingUp, Sparkles, Truck, Warehouse, CreditCard, RotateCcw, BellRing, LayoutPanelTop, MapPinned, BadgeDollarSign
+    ShoppingBag, Tag, TrendingUp, Sparkles, Truck, Warehouse, CreditCard, RotateCcw, BellRing, LayoutPanelTop, MapPinned, BadgeDollarSign, Star
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -37,6 +37,7 @@ export const AdminLayout: React.FC = () => {
         { path: '/categories', icon: Tag, label: 'التصنيفات', badge: null },
         { path: '/marketing', icon: Sparkles, label: 'التسويق والعروض', badge: null },
         { path: '/affiliates', icon: BadgeDollarSign, label: 'المسوقات والعمولات', badge: null },
+        { path: '/reviews', icon: Star, label: 'التقييمات والمراجعة', badge: null },
         { path: '/bi', icon: TrendingUp, label: 'ذكاء الأعمال', badge: 'AI' }
     ];
 

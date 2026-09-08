@@ -16,6 +16,7 @@ import { NotificationsPage } from './pages/NotificationsPage';
 import { StorefrontPage } from './pages/StorefrontPage';
 import { DeliveryZonesPage } from './pages/DeliveryZonesPage';
 import { AffiliatesPage } from './pages/AffiliatesPage';
+import { ReviewsModerationPage } from './pages/ReviewsModerationPage';
 
 function App() {
   return (
@@ -33,6 +34,7 @@ function App() {
         <Route path="storefront" element={<StorefrontPage />} />
         <Route path="delivery-zones" element={<DeliveryZonesPage />} />
         <Route path="affiliates" element={<AffiliatesPage />} />
+        <Route path="reviews" element={<ReviewsModerationPage />} />
         <Route path="logistics" element={<LogisticsPage />} />
         <Route path="warehouses" element={<WarehousesPage />} />
 
